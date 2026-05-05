@@ -13,14 +13,14 @@ $pdo = get_pdo();
 $stmt = $pdo->prepare(
     'SELECT
        a.id,
-       s.name AS service_name,
+       c.name AS course_name,
        a.car_model,
        a.visit_date,
        a.visit_time,
        pm.name AS payment_method,
        st.name AS status
      FROM applications a
-     INNER JOIN services s ON s.id = a.service_id
+     INNER JOIN courses c ON c.id = a.course_id
      INNER JOIN payment_methods pm ON pm.id = a.payment_method_id
      INNER JOIN application_statuses st ON st.id = a.status_id
      WHERE a.user_id = :user_id

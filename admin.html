@@ -23,9 +23,8 @@
         <select id="statusFilter">
           <option value="">Все статусы</option>
           <option value="Новая">Новая</option>
-          <option value="Подтверждена">Подтверждена</option>
-          <option value="Выполнена">Выполнена</option>
-          <option value="Отменена">Отменена</option>
+          <option value="Идёт обучение">Идёт обучение</option>
+          <option value="Обучение завершено">Обучение завершено</option>
         </select>
       </div>
       <div class="field">
@@ -34,27 +33,57 @@
       </div>
     </div>
 
-    <table class="table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Пользователь ID</th>
-          <th>Услуга</th>
-          <th>Авто</th>
-          <th>Дата/время</th>
-          <th>Статус</th>
-        </tr>
-      </thead>
-      <tbody id="appsTbody"></tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Пользователь ID</th>
+            <th>Курс</th>
+            <th>Авто</th>
+            <th>Дата/время</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="appsTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination card" style="margin-top: 0;">
+      <button id="prevPageBtn" type="button">Назад</button>
+      <span id="pageInfo">Страница 1</span>
+      <button id="nextPageBtn" type="button">Вперёд</button>
+    </div>
+    <p id="msg" class="msg"></p>
   </div>
+
+  <div id="toast" class="toast"></div>
 
   <script>
     const tbody = document.getElementById("appsTbody");
     const logoutLink = document.getElementById("logoutLink");
     const statusFilter = document.getElementById("statusFilter");
     const searchInput = document.getElementById("searchInput");
+    const toast = document.getElementById("toast");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
+    const msg = document.getElementById("msg");
     const role = localStorage.getItem("carwash_current_role");
+    const pageSize = 5;
+    let currentPage = 1;
+
+    function setMsg(text, type = "") {
+      msg.className = type ? `msg ${type}` : "msg";
+      msg.textContent = text || "";
+    }
+
+    function showToast(text, isError = false) {
+      toast.textContent = text;
+      toast.style.background = isError ? "#b42318" : "#1d2939";
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 1800);
+    }
 
     if (role !== "admin") {
       window.location.href = "./login.html";
@@ -66,6 +95,7 @@
         const data = await res.json();
         if (!res.ok) {
           tbody.innerHTML = `<tr><td colspan="6">${data.error || "Ошибка загрузки заявок."}</td></tr>`;
+          setMsg(data.error || "Ошибка загрузки заявок.", "error");
           return;
         }
 
@@ -74,29 +104,40 @@
         const query = searchInput.value.trim().toLowerCase();
         const filtered = apps.filter((app) => {
           const byStatus = !statusValue || app.status === statusValue;
-          const haystack = `${app.service_name} ${app.car_model}`.toLowerCase();
+          const haystack = `${app.course_name} ${app.car_model}`.toLowerCase();
           const byQuery = !query || haystack.includes(query);
           return byStatus && byQuery;
         });
 
         if (!filtered.length) {
           tbody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
+          pageInfo.textContent = "Страница 0 из 0";
+          prevPageBtn.disabled = true;
+          nextPageBtn.disabled = true;
           return;
         }
 
-        tbody.innerHTML = filtered.map((a) => `
+        const totalPages = Math.ceil(filtered.length / pageSize);
+        currentPage = Math.min(currentPage, totalPages);
+        const start = (currentPage - 1) * pageSize;
+        const paged = filtered.slice(start, start + pageSize);
+
+        pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+        prevPageBtn.disabled = currentPage <= 1;
+        nextPageBtn.disabled = currentPage >= totalPages;
+
+        tbody.innerHTML = paged.map((a) => `
           <tr>
             <td>${a.id}</td>
             <td>${a.user_id}</td>
-            <td>${a.service_name}</td>
+            <td>${a.course_name}</td>
             <td>${a.car_model}</td>
             <td>${a.visit_date} ${a.visit_time}</td>
             <td>
               <select data-id="${a.id}">
                 <option ${a.status === "Новая" ? "selected" : ""}>Новая</option>
-                <option ${a.status === "Подтверждена" ? "selected" : ""}>Подтверждена</option>
-                <option ${a.status === "Выполнена" ? "selected" : ""}>Выполнена</option>
-                <option ${a.status === "Отменена" ? "selected" : ""}>Отменена</option>
+                <option ${a.status === "Идёт обучение" ? "selected" : ""}>Идёт обучение</option>
+                <option ${a.status === "Обучение завершено" ? "selected" : ""}>Обучение завершено</option>
               </select>
             </td>
           </tr>
@@ -114,15 +155,24 @@
                 })
               });
               if (!updRes.ok) {
+                showToast("Не удалось обновить статус.", true);
+                setMsg("Не удалось обновить статус.", "error");
                 render();
+                return;
               }
+              showToast("Статус обновлён.");
+              setMsg("Статус обновлён.", "ok");
             } catch {
+              showToast("Ошибка подключения к серверу.", true);
+              setMsg("Ошибка подключения к серверу.", "error");
               render();
             }
           });
         });
+        setMsg("");
       } catch {
         tbody.innerHTML = '<tr><td colspan="6">Ошибка подключения к серверу.</td></tr>';
+        setMsg("Ошибка подключения к серверу.", "error");
       }
     }
 
@@ -133,8 +183,24 @@
       window.location.href = "./login.html";
     });
 
-    statusFilter.addEventListener("change", render);
-    searchInput.addEventListener("input", render);
+    statusFilter.addEventListener("change", () => {
+      currentPage = 1;
+      render();
+    });
+    searchInput.addEventListener("input", () => {
+      currentPage = 1;
+      render();
+    });
+    prevPageBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        render();
+      }
+    });
+    nextPageBtn.addEventListener("click", () => {
+      currentPage += 1;
+      render();
+    });
 
     render();
   </script>

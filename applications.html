@@ -16,21 +16,24 @@
     </div>
 
     <h1>Мои заявки</h1>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Услуга</th>
-          <th>Авто</th>
-          <th>Дата/время</th>
-          <th>Оплата</th>
-          <th>Статус</th>
-        </tr>
-      </thead>
-      <tbody id="appsTbody"></tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Курс</th>
+            <th>Авто</th>
+            <th>Дата/время</th>
+            <th>Оплата</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="appsTbody"></tbody>
+      </table>
+    </div>
 
     <h2 style="margin-top: 20px;">Оставить отзыв</h2>
+    <p id="reviewHint" class="muted">Отзыв будет доступен после получения статуса "Обучение завершено".</p>
     <form id="reviewForm" class="card">
       <div class="field">
         <label for="review_text">Текст отзыва</label>
@@ -46,6 +49,15 @@
     const reviewForm = document.getElementById("reviewForm");
     const msg = document.getElementById("msg");
     const logoutLink = document.getElementById("logoutLink");
+    const reviewHint = document.getElementById("reviewHint");
+    const reviewText = document.getElementById("review_text");
+    const reviewButton = reviewForm.querySelector("button[type='submit']");
+    let canSendReview = false;
+
+    function setMsg(text, type = "") {
+      msg.className = type ? `msg ${type}` : "msg";
+      msg.textContent = text || "";
+    }
 
     const currentUserId = Number(localStorage.getItem("carwash_current_user_id"));
     if (!currentUserId) {
@@ -64,32 +76,49 @@
         const rows = data.items || [];
         if (!rows.length) {
           tbody.innerHTML = '<tr><td colspan="6">Пока нет заявок.</td></tr>';
+          canSendReview = false;
+          reviewText.disabled = true;
+          reviewButton.disabled = true;
+          reviewHint.textContent = 'У вас пока нет заявок. Отзыв станет доступен после статуса "Обучение завершено".';
           return;
         }
 
         tbody.innerHTML = rows.map((r) => `
           <tr>
             <td>${r.id}</td>
-            <td>${r.service_name}</td>
+            <td>${r.course_name}</td>
             <td>${r.car_model}</td>
             <td>${r.visit_date} ${r.visit_time}</td>
             <td>${r.payment_method}</td>
             <td>${r.status}</td>
           </tr>
         `).join("");
+
+        canSendReview = rows.some((r) => r.status === "Обучение завершено");
+        reviewText.disabled = !canSendReview;
+        reviewButton.disabled = !canSendReview;
+        reviewHint.textContent = canSendReview
+          ? "Статус выполнен. Теперь можно оставить отзыв."
+          : 'Форма отзыва недоступна до статуса "Обучение завершено".';
       } catch {
         tbody.innerHTML = '<tr><td colspan="6">Ошибка подключения к серверу.</td></tr>';
+        canSendReview = false;
+        reviewText.disabled = true;
+        reviewButton.disabled = true;
       }
     }
 
     reviewForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.className = "msg";
+      setMsg("");
+      if (!canSendReview) {
+        setMsg('Отзыв можно оставить только после статуса "Обучение завершено".', "error");
+        return;
+      }
 
       const text = reviewForm.review_text.value.trim();
       if (!text) {
-        msg.textContent = "Отзыв не должен быть пустым.";
-        msg.classList.add("error");
+        setMsg("Отзыв не должен быть пустым.", "error");
         return;
       }
 
@@ -104,17 +133,14 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          msg.textContent = data.error || "Ошибка отправки отзыва.";
-          msg.classList.add("error");
+          setMsg(data.error || "Ошибка отправки отзыва.", "error");
           return;
         }
 
         reviewForm.reset();
-        msg.textContent = "Отзыв отправлен.";
-        msg.classList.add("ok");
+        setMsg("Отзыв отправлен.", "ok");
       } catch {
-        msg.textContent = "Ошибка подключения к серверу.";
-        msg.classList.add("error");
+        setMsg("Ошибка подключения к серверу.", "error");
       }
     });
 

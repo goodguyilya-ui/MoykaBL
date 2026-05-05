@@ -16,6 +16,17 @@
       <a href="./admin.html">Админка</a>
     </div>
 
+    <div class="slider" id="slider">
+      <div class="slides">
+        <img class="slide is-active" src="https://i.postimg.cc/Dy3s0K7x/slide-01-webp.jpg" alt="Слайд 1">
+        <img class="slide" src="https://i.postimg.cc/8PgWcVTK/slide-02-webp.jpg" alt="Слайд 2">
+        <img class="slide" src="https://i.postimg.cc/SNb8Rpmt/slide-03-webp.jpg" alt="Слайд 3">
+        <img class="slide" src="https://i.postimg.cc/wTYJMd94/slide-04-webp.jpg" alt="Слайд 4">
+      </div>
+      <button class="slider-btn prev" type="button">&#10094;</button>
+      <button class="slider-btn next" type="button">&#10095;</button>
+    </div>
+
     <h1>Авторизация</h1>
     <form id="loginForm" class="card">
       <div class="field">
@@ -30,13 +41,39 @@
         <button type="submit">Войти</button>
       </div>
       <p id="msg" class="msg"></p>
+      <p class="muted"><a href="./register.html">Еще не зарегистрированы? Регистрация</a></p>
       <p class="muted">Администратор: логин <b>Admin</b>, пароль <b>KorokNET</b>.</p>
     </form>
   </div>
 
+  <script src="./slider.js"></script>
   <script>
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("msg");
+    function setMsg(text, type = "") {
+      msg.className = type ? `msg ${type}` : "msg";
+      msg.textContent = text || "";
+    }
+
+    const apiBases = ["./api", "../api", "../backend/api", "/korochki_carwash/api"];
+
+    async function apiPost(endpoint, payload) {
+      let lastError = null;
+      for (const base of apiBases) {
+        try {
+          const res = await fetch(`${base}/${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          return { res, data };
+        } catch (e) {
+          lastError = e;
+        }
+      }
+      throw lastError || new Error("API недоступно");
+    }
 
     const existingRole = localStorage.getItem("carwash_current_role");
     if (existingRole === "admin") {
@@ -47,27 +84,20 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.className = "msg";
+      setMsg("");
       try {
-        const res = await fetch("./api/login.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            login: form.login.value.trim(),
-            password: form.password.value
-          })
+        const { res, data } = await apiPost("login.php", {
+          login: form.login.value.trim(),
+          password: form.password.value
         });
-        const data = await res.json();
         if (!res.ok) {
-          msg.textContent = data.error || "Ошибка авторизации.";
-          msg.classList.add("error");
+          setMsg(data.error || "Ошибка авторизации.", "error");
           return;
         }
 
         localStorage.setItem("carwash_current_user_id", String(data.user_id));
         localStorage.setItem("carwash_current_role", data.role);
-        msg.textContent = "Вход выполнен.";
-        msg.classList.add("ok");
+        setMsg("Вход выполнен.", "ok");
 
         if (data.role === "admin") {
           window.location.href = "./admin.html";
@@ -75,8 +105,7 @@
           window.location.href = "./applications.html";
         }
       } catch {
-        msg.textContent = "Ошибка подключения к серверу.";
-        msg.classList.add("error");
+        setMsg("Ошибка подключения к серверу.", "error");
       }
     });
   </script>
