@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Автомойка - Панель администратора</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="top-nav">
+      <a href="./login.html">Вход</a>
+      <a href="./admin.html">Админка</a>
+      <a href="./applications.html">Мои заявки</a>
+      <a href="#" id="logoutLink">Выход</a>
+    </div>
+
+    <h1>Панель администратора</h1>
+    <p class="muted">Доступно только для роли admin.</p>
+    <div class="card">
+      <div class="field">
+        <label for="statusFilter">Фильтр по статусу</label>
+        <select id="statusFilter">
+          <option value="">Все статусы</option>
+          <option value="Новая">Новая</option>
+          <option value="Подтверждена">Подтверждена</option>
+          <option value="Выполнена">Выполнена</option>
+          <option value="Отменена">Отменена</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="searchInput">Поиск по услуге или авто</label>
+        <input id="searchInput" type="text" placeholder="Например, Kia или Комплексная">
+      </div>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Пользователь ID</th>
+          <th>Услуга</th>
+          <th>Авто</th>
+          <th>Дата/время</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody id="appsTbody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const tbody = document.getElementById("appsTbody");
+    const logoutLink = document.getElementById("logoutLink");
+    const statusFilter = document.getElementById("statusFilter");
+    const searchInput = document.getElementById("searchInput");
+    const role = localStorage.getItem("carwash_current_role");
+
+    if (role !== "admin") {
+      window.location.href = "./login.html";
+    }
+
+    async function render() {
+      try {
+        const res = await fetch("./api/get_admin_applications.php");
+        const data = await res.json();
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="6">${data.error || "Ошибка загрузки заявок."}</td></tr>`;
+          return;
+        }
+
+        const apps = data.items || [];
+        const statusValue = statusFilter.value;
+        const query = searchInput.value.trim().toLowerCase();
+        const filtered = apps.filter((app) => {
+          const byStatus = !statusValue || app.status === statusValue;
+          const haystack = `${app.service_name} ${app.car_model}`.toLowerCase();
+          const byQuery = !query || haystack.includes(query);
+          return byStatus && byQuery;
+        });
+
+        if (!filtered.length) {
+          tbody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = filtered.map((a) => `
+          <tr>
+            <td>${a.id}</td>
+            <td>${a.user_id}</td>
+            <td>${a.service_name}</td>
+            <td>${a.car_model}</td>
+            <td>${a.visit_date} ${a.visit_time}</td>
+            <td>
+              <select data-id="${a.id}">
+                <option ${a.status === "Новая" ? "selected" : ""}>Новая</option>
+                <option ${a.status === "Подтверждена" ? "selected" : ""}>Подтверждена</option>
+                <option ${a.status === "Выполнена" ? "selected" : ""}>Выполнена</option>
+                <option ${a.status === "Отменена" ? "selected" : ""}>Отменена</option>
+              </select>
+            </td>
+          </tr>
+        `).join("");
+
+        tbody.querySelectorAll("select").forEach((sel) => {
+          sel.addEventListener("change", async () => {
+            try {
+              const updRes = await fetch("./api/update_application_status.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  application_id: Number(sel.dataset.id),
+                  status: sel.value
+                })
+              });
+              if (!updRes.ok) {
+                render();
+              }
+            } catch {
+              render();
+            }
+          });
+        });
+      } catch {
+        tbody.innerHTML = '<tr><td colspan="6">Ошибка подключения к серверу.</td></tr>';
+      }
+    }
+
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("carwash_current_user_id");
+      localStorage.removeItem("carwash_current_role");
+      window.location.href = "./login.html";
+    });
+
+    statusFilter.addEventListener("change", render);
+    searchInput.addEventListener("input", render);
+
+    render();
+  </script>
+</body>
+</html>

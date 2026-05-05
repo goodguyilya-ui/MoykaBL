@@ -1,0 +1,128 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f5f8;
+  color: #1b1f24;
+}
+
+.container {
+  max-width: 900px;
+  margin: 36px auto;
+  padding: 0 16px;
+}
+
+h1,
+h2 {
+  margin: 0 0 16px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+label {
+  font-size: 14px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  padding: 10px;
+  border: 1px solid #c8cdd5;
+  border-radius: 8px;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1859ba;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.msg {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.ok {
+  color: #157347;
+}
+
+.error {
+  color: #b42318;
+}
+
+.top-nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.top-nav a {
+  text-decoration: none;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #1f6feb;
+  border: 1px solid #d8dee8;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #ebeff5;
+  text-align: left;
+  padding: 10px;
+  vertical-align: top;
+}
+
+.muted {
+  color: #59636e;
+  font-size: 14px;
+}

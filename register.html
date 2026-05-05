@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Автомойка - Регистрация</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="top-nav">
+      <a href="./login.html">Вход</a>
+      <a href="./register.html">Регистрация</a>
+    </div>
+
+    <h1>Регистрация клиента</h1>
+    <form id="regForm" class="card">
+      <div class="field">
+        <label for="login">Логин</label>
+        <input id="login" name="login" required minlength="6" pattern="^[A-Za-z0-9]{6,}$" placeholder="Латиница и цифры">
+      </div>
+
+      <div class="field">
+        <label for="password">Пароль</label>
+        <input id="password" name="password" type="password" required minlength="8" placeholder="Минимум 8 символов">
+      </div>
+
+      <div class="field">
+        <label for="full_name">ФИО</label>
+        <input id="full_name" name="full_name" required pattern="^[А-Яа-яЁё\\s]+$" placeholder="Иванов Иван Иванович">
+      </div>
+
+      <div class="field">
+        <label for="phone">Телефон</label>
+        <input id="phone" name="phone" required pattern="^8\\(\\d{3}\\)\\d{3}-\\d{2}-\\d{2}$" placeholder="8(999)123-45-67">
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required placeholder="name@example.com">
+      </div>
+
+      <div class="actions">
+        <button type="submit">Создать пользователя</button>
+      </div>
+      <p id="msg" class="msg"></p>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("regForm");
+    const msg = document.getElementById("msg");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "msg";
+
+      if (!form.checkValidity()) {
+        msg.textContent = "Проверьте корректность заполнения формы.";
+        msg.classList.add("error");
+        return;
+      }
+
+      const payload = {
+        login: form.login.value.trim(),
+        password: form.password.value,
+        full_name: form.full_name.value.trim(),
+        phone: form.phone.value.trim(),
+        email: form.email.value.trim().toLowerCase()
+      };
+
+      try {
+        const res = await fetch("./api/register.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || "Ошибка регистрации.";
+          msg.classList.add("error");
+          return;
+        }
+
+        form.reset();
+        msg.textContent = "Пользователь создан. Теперь можно войти.";
+        msg.classList.add("ok");
+      } catch {
+        msg.textContent = "Ошибка подключения к серверу.";
+        msg.classList.add("error");
+      }
+    });
+  </script>
+</body>
+</html>

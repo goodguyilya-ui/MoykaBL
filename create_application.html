@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Автомойка - Новая заявка</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="top-nav">
+      <a href="./login.html">Вход</a>
+      <a href="./register.html">Регистрация</a>
+      <a href="./applications.html">Мои заявки</a>
+      <a href="./create_application.html">Новая заявка</a>
+      <a href="#" id="logoutLink">Выход</a>
+    </div>
+
+    <h1>Оформление заявки на мойку</h1>
+    <form id="appForm" class="card">
+      <div class="field">
+        <label for="service_name">Услуга</label>
+        <select id="service_name" name="service_name" required>
+          <option value="">Выберите услугу</option>
+          <option>Экспресс-мойка</option>
+          <option>Комплексная мойка</option>
+          <option>Химчистка салона</option>
+          <option>Полировка кузова</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="car_model">Марка и модель автомобиля</label>
+        <input id="car_model" name="car_model" required placeholder="Например, Kia Rio">
+      </div>
+
+      <div class="field">
+        <label for="visit_date">Желаемая дата</label>
+        <input id="visit_date" type="date" name="visit_date" required>
+      </div>
+
+      <div class="field">
+        <label for="visit_time">Желаемое время</label>
+        <input id="visit_time" type="time" name="visit_time" required>
+      </div>
+
+      <div class="field">
+        <label for="payment_method">Способ оплаты</label>
+        <select id="payment_method" name="payment_method" required>
+          <option value="">Выберите способ</option>
+          <option>Наличными</option>
+          <option>Картой</option>
+          <option>Переводом по номеру телефона</option>
+        </select>
+      </div>
+
+      <button type="submit">Отправить</button>
+      <p id="msg" class="msg"></p>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("appForm");
+    const msg = document.getElementById("msg");
+    const logoutLink = document.getElementById("logoutLink");
+
+    const userId = localStorage.getItem("carwash_current_user_id");
+    if (!userId) {
+      window.location.href = "./login.html";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "msg";
+
+      if (!form.checkValidity()) {
+        msg.textContent = "Заполните обязательные поля.";
+        msg.classList.add("error");
+        return;
+      }
+
+      const payload = {
+        user_id: Number(localStorage.getItem("carwash_current_user_id")),
+        service_name: form.service_name.value,
+        car_model: form.car_model.value.trim(),
+        visit_date: form.visit_date.value,
+        visit_time: form.visit_time.value,
+        payment_method: form.payment_method.value
+      };
+
+      try {
+        const res = await fetch("./api/create_application.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || "Ошибка создания заявки.";
+          msg.classList.add("error");
+          return;
+        }
+
+        form.reset();
+        msg.textContent = "Заявка создана.";
+        msg.classList.add("ok");
+      } catch {
+        msg.textContent = "Ошибка подключения к серверу.";
+        msg.classList.add("error");
+      }
+    });
+
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("carwash_current_user_id");
+      localStorage.removeItem("carwash_current_role");
+      window.location.href = "./login.html";
+    });
+  </script>
+</body>
+</html>
