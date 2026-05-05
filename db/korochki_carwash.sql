@@ -1,4 +1,6 @@
--- Перед запуском откройте БД korochki_carwash в phpMyAdmin.
+DROP DATABASE IF EXISTS korochki_carwash;
+CREATE DATABASE korochki_carwash CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE korochki_carwash;
 
 -- 1) Roles
 CREATE TABLE roles (
@@ -22,10 +24,10 @@ CREATE TABLE users (
     ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 3) Service catalog (car wash services)
-CREATE TABLE services (
+-- 3) Courses dictionary
+CREATE TABLE courses (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE
+  name VARCHAR(200) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
 -- 4) Payment methods
@@ -40,11 +42,11 @@ CREATE TABLE application_statuses (
   name VARCHAR(50) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
--- 6) Applications (booking requests)
+-- 6) Applications (course requests)
 CREATE TABLE applications (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  service_id INT NOT NULL,
+  course_id INT NOT NULL,
   car_model VARCHAR(120) NOT NULL,
   visit_date DATE NOT NULL,
   visit_time TIME NOT NULL,
@@ -55,8 +57,8 @@ CREATE TABLE applications (
     FOREIGN KEY (user_id) REFERENCES users(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  CONSTRAINT fk_app_service
-    FOREIGN KEY (service_id) REFERENCES services(id)
+  CONSTRAINT fk_app_course
+    FOREIGN KEY (course_id) REFERENCES courses(id)
     ON UPDATE CASCADE
     ON DELETE RESTRICT,
   CONSTRAINT fk_app_payment
@@ -86,22 +88,19 @@ INSERT INTO roles (name) VALUES
   ('client'),
   ('admin');
 
-INSERT INTO services (name) VALUES
-  ('Экспресс-мойка'),
-  ('Комплексная мойка'),
-  ('Химчистка салона'),
-  ('Полировка кузова');
+INSERT INTO courses (name) VALUES
+  ('Основы алгоритмизации и программирования'),
+  ('Основы веб-дизайна'),
+  ('Основы проектирования баз данных');
 
 INSERT INTO payment_methods (name) VALUES
   ('Наличными'),
-  ('Картой'),
   ('Переводом по номеру телефона');
 
 INSERT INTO application_statuses (name) VALUES
   ('Новая'),
-  ('Подтверждена'),
-  ('Выполнена'),
-  ('Отменена');
+  ('Идёт обучение'),
+  ('Обучение завершено');
 
 -- Test users
 -- Note: in production, store only hashed passwords.
@@ -125,15 +124,15 @@ INSERT INTO users (login, password_hash, full_name, phone, email, role_id) VALUE
 
 -- Test applications
 INSERT INTO applications (
-  user_id, service_id, car_model, visit_date, visit_time, payment_method_id, status_id
+  user_id, course_id, car_model, visit_date, visit_time, payment_method_id, status_id
 ) VALUES
   (
     (SELECT id FROM users WHERE login = 'client01'),
-    (SELECT id FROM services WHERE name = 'Комплексная мойка'),
+    (SELECT id FROM courses WHERE name = 'Основы веб-дизайна'),
     'Kia Rio',
     CURDATE(),
     '10:30:00',
-    (SELECT id FROM payment_methods WHERE name = 'Картой'),
+    (SELECT id FROM payment_methods WHERE name = 'Наличными'),
     (SELECT id FROM application_statuses WHERE name = 'Новая')
   );
 

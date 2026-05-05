@@ -9,13 +9,13 @@ $stmt = $pdo->query(
     'SELECT
        a.id,
        a.user_id,
-       s.name AS service_name,
+       c.name AS course_name,
        a.car_model,
        a.visit_date,
        a.visit_time,
        st.name AS status
      FROM applications a
-     INNER JOIN services s ON s.id = a.service_id
+     INNER JOIN courses c ON c.id = a.course_id
      INNER JOIN application_statuses st ON st.id = a.status_id
      ORDER BY a.id DESC'
 );

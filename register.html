@@ -44,19 +44,88 @@
         <button type="submit">Создать пользователя</button>
       </div>
       <p id="msg" class="msg"></p>
+      <p class="muted"><a href="./login.html">Уже зарегистрированы? Войти</a></p>
     </form>
   </div>
 
   <script>
     const form = document.getElementById("regForm");
     const msg = document.getElementById("msg");
+    function setMsg(text, type = "") {
+      msg.className = type ? `msg ${type}` : "msg";
+      msg.textContent = text || "";
+    }
+
+    const fields = Array.from(form.querySelectorAll("input"));
+
+    function clearFieldError(input) {
+      input.classList.remove("is-error");
+      const errorEl = input.parentElement.querySelector(".field-error");
+      if (errorEl) {
+        errorEl.remove();
+      }
+    }
+
+    function setFieldError(input, text) {
+      clearFieldError(input);
+      input.classList.add("is-error");
+      const errorEl = document.createElement("p");
+      errorEl.className = "field-error";
+      errorEl.textContent = text;
+      input.parentElement.appendChild(errorEl);
+    }
+
+    function validateForm() {
+      let hasError = false;
+      fields.forEach((input) => {
+        clearFieldError(input);
+        if (input.validity.valid) {
+          return;
+        }
+
+        hasError = true;
+        if (input.validity.valueMissing) {
+          setFieldError(input, "Поле обязательно для заполнения.");
+          return;
+        }
+        if (input.id === "login") {
+          setFieldError(input, "Логин: от 6 символов, только латиница и цифры.");
+          return;
+        }
+        if (input.id === "password") {
+          setFieldError(input, "Пароль должен содержать минимум 8 символов.");
+          return;
+        }
+        if (input.id === "full_name") {
+          setFieldError(input, "ФИО: только русские буквы и пробелы.");
+          return;
+        }
+        if (input.id === "phone") {
+          setFieldError(input, "Формат телефона: 8(999)123-45-67.");
+          return;
+        }
+        if (input.id === "email") {
+          setFieldError(input, "Введите корректный email.");
+        }
+      });
+
+      return !hasError;
+    }
+
+    fields.forEach((input) => {
+      input.addEventListener("input", () => {
+        if (input.validity.valid) {
+          clearFieldError(input);
+        }
+      });
+    });
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.className = "msg";
+      setMsg("");
 
-      if (!form.checkValidity()) {
-        msg.textContent = "Проверьте корректность заполнения формы.";
-        msg.classList.add("error");
+      if (!validateForm()) {
+        setMsg("Проверьте корректность заполнения формы.", "error");
         return;
       }
 
@@ -76,17 +145,14 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          msg.textContent = data.error || "Ошибка регистрации.";
-          msg.classList.add("error");
+          setMsg(data.error || "Ошибка регистрации.", "error");
           return;
         }
 
         form.reset();
-        msg.textContent = "Пользователь создан. Теперь можно войти.";
-        msg.classList.add("ok");
+        setMsg("Пользователь создан. Теперь можно войти.", "ok");
       } catch {
-        msg.textContent = "Ошибка подключения к серверу.";
-        msg.classList.add("error");
+        setMsg("Ошибка подключения к серверу.", "error");
       }
     });
   </script>

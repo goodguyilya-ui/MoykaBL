@@ -1,7 +1,30 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db.php';
+$dbCandidates = [
+    __DIR__ . '/../db.php',
+    __DIR__ . '/../../db.php',
+    __DIR__ . '/../../backend/db.php',
+];
+
+$dbLoaded = false;
+foreach ($dbCandidates as $candidate) {
+    if (is_file($candidate)) {
+        require_once $candidate;
+        $dbLoaded = true;
+        break;
+    }
+}
+
+if (!$dbLoaded) {
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(500);
+    echo json_encode(
+        ['error' => 'Не найден файл подключения db.php. Проверьте структуру проекта.'],
+        JSON_UNESCAPED_UNICODE
+    );
+    exit;
+}
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -33,3 +56,11 @@ function field(array $data, string $key): string
 {
     return trim((string)($data[$key] ?? ''));
 }
+
+set_exception_handler(static function (Throwable $e): void {
+    $message = $e->getMessage();
+    if (str_contains(mb_strtolower($message), 'access denied')) {
+        $message = 'Ошибка подключения к MySQL: проверьте логин/пароль в db.php.';
+    }
+    json_response(['error' => $message], 500);
+});
