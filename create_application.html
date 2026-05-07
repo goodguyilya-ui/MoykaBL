@@ -58,6 +58,32 @@
   </div>
 
   <script>
+    function navigateTo(url) {
+      if (!url) return;
+      document.body.classList.add("page-leaving");
+      window.setTimeout(() => {
+        window.location.href = url;
+      }, 180);
+    }
+
+    function setupPageTransitions() {
+      window.requestAnimationFrame(() => {
+        document.body.classList.add("page-ready");
+      });
+      document.querySelectorAll("a[href]").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          const href = link.getAttribute("href") || "";
+          if (!href || href.startsWith("#") || link.target === "_blank" || href.startsWith("http")) {
+            return;
+          }
+          e.preventDefault();
+          navigateTo(href);
+        });
+      });
+    }
+
+    setupPageTransitions();
+
     const form = document.getElementById("appForm");
     const msg = document.getElementById("msg");
     const logoutLink = document.getElementById("logoutLink");
@@ -69,7 +95,7 @@
     }
 
     if (!userId) {
-      window.location.href = "./login.html";
+      navigateTo("./login.html");
     }
 
     function toIsoDate(dateText) {
@@ -141,7 +167,7 @@
       e.preventDefault();
       localStorage.removeItem("carwash_current_user_id");
       localStorage.removeItem("carwash_current_role");
-      window.location.href = "./login.html";
+      navigateTo("./login.html");
     });
   </script>
 </body>
