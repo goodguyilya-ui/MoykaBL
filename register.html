@@ -49,6 +49,32 @@
   </div>
 
   <script>
+    function navigateTo(url) {
+      if (!url) return;
+      document.body.classList.add("page-leaving");
+      window.setTimeout(() => {
+        window.location.href = url;
+      }, 180);
+    }
+
+    function setupPageTransitions() {
+      window.requestAnimationFrame(() => {
+        document.body.classList.add("page-ready");
+      });
+      document.querySelectorAll("a[href]").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          const href = link.getAttribute("href") || "";
+          if (!href || href.startsWith("#") || link.target === "_blank" || href.startsWith("http")) {
+            return;
+          }
+          e.preventDefault();
+          navigateTo(href);
+        });
+      });
+    }
+
+    setupPageTransitions();
+
     const form = document.getElementById("regForm");
     const msg = document.getElementById("msg");
     function setMsg(text, type = "") {
@@ -138,7 +164,7 @@
       };
 
       try {
-        const res = await fetch("./api/register.php", {
+        const res = await fetch("./api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)

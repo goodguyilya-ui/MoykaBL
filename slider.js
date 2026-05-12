@@ -17,7 +17,6 @@
     slides.forEach((slide, i) => {
       const isActive = i === index;
       slide.classList.toggle("is-active", isActive);
-      slide.style.display = isActive ? "block" : "none";
     });
   }
 

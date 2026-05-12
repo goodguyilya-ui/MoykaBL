@@ -48,6 +48,32 @@
 
   <script src="./slider.js"></script>
   <script>
+    function navigateTo(url) {
+      if (!url) return;
+      document.body.classList.add("page-leaving");
+      window.setTimeout(() => {
+        window.location.href = url;
+      }, 180);
+    }
+
+    function setupPageTransitions() {
+      window.requestAnimationFrame(() => {
+        document.body.classList.add("page-ready");
+      });
+      document.querySelectorAll("a[href]").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          const href = link.getAttribute("href") || "";
+          if (!href || href.startsWith("#") || link.target === "_blank" || href.startsWith("http")) {
+            return;
+          }
+          e.preventDefault();
+          navigateTo(href);
+        });
+      });
+    }
+
+    setupPageTransitions();
+
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("msg");
     function setMsg(text, type = "") {
@@ -55,7 +81,7 @@
       msg.textContent = text || "";
     }
 
-    const apiBases = ["./api", "../api", "../backend/api", "/korochki_carwash/api"];
+    const apiBases = ["./api", "/api"];
 
     async function apiPost(endpoint, payload) {
       let lastError = null;
@@ -77,16 +103,16 @@
 
     const existingRole = localStorage.getItem("carwash_current_role");
     if (existingRole === "admin") {
-      window.location.href = "./admin.html";
+      navigateTo("./admin.html");
     } else if (existingRole === "client") {
-      window.location.href = "./applications.html";
+      navigateTo("./applications.html");
     }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       setMsg("");
       try {
-        const { res, data } = await apiPost("login.php", {
+        const { res, data } = await apiPost("login", {
           login: form.login.value.trim(),
           password: form.password.value
         });
@@ -100,9 +126,9 @@
         setMsg("Вход выполнен.", "ok");
 
         if (data.role === "admin") {
-          window.location.href = "./admin.html";
+          navigateTo("./admin.html");
         } else {
-          window.location.href = "./applications.html";
+          navigateTo("./applications.html");
         }
       } catch {
         setMsg("Ошибка подключения к серверу.", "error");
